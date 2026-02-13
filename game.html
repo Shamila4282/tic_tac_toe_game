@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Tic Tac Toe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════ CSS VARIABLES ═══════════════════════ */
+:root {
+  --bg-primary: #0a0e27;
+  --bg-secondary: #151a3d;
+  --glass-bg: rgba(255,255,255,0.06);
+  --glass-bg-hover: rgba(255,255,255,0.1);
+  --glass-border: rgba(255,255,255,0.12);
+  --glass-shadow: rgba(0,0,0,0.3);
+  --x-color: #ff6b6b;
+  --x-glow: rgba(255,107,107,0.5);
+  --o-color: #4ecdc4;
+  --o-glow: rgba(78,205,196,0.5);
+  --accent: #a78bfa;
+  --accent-glow: rgba(167,139,250,0.4);
+  --btn-gradient: linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  --btn-gradient-hover: linear-gradient(135deg,#7c8ff8 0%,#8a5cb8 100%);
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255,255,255,0.6);
+  --danger: #ff4757;
+  --success: #2ed573;
+}
+
+/* ═══════════════════════ RESET & BASE ═══════════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Poppins',system-ui,-apple-system,sans-serif;
+  background:linear-gradient(135deg,var(--bg-primary) 0%,var(--bg-secondary) 50%,var(--bg-primary) 100%);
+  color:var(--text-primary);
+  -webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+button{
+  font-family:inherit;cursor:pointer;border:none;outline:none;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* ═══════════════════════ PARTICLES ═══════════════════════ */
+#bgParticles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{
+  position:absolute;bottom:-20px;
+  background:var(--accent);opacity:0;
+  border-radius:50%;
+  animation:particleFloat linear infinite;
+}
+@keyframes particleFloat{
+  0%{transform:translateY(0) rotate(0deg);opacity:0}
+  5%{opacity:.4}
+  95%{opacity:.4}
+  100%{transform:translateY(-110vh) rotate(720deg);opacity:0}
+}
+
+/* ═══════════════════════ SCREEN SYSTEM ═══════════════════════ */
+.screen{
+  position:fixed;inset:0;z-index:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;visibility:hidden;
+  transition:opacity .6s ease,visibility .6s ease;
+  padding:20px;
+}
+.screen.active{opacity:1;visibility:visible}
+
+/* ═══════════════════════ GLASS CARD ═══════════════════════ */
+.glass-card{
+  background:var(--glass-bg);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--glass-border);
+  border-radius:24px;
+  box-shadow:0 8px 32px var(--glass-shadow),inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* ═══════════════════════ SOUND TOGGLE ═══════════════════════ */
+#soundToggle{
+  position:fixed;top:16px;right:16px;z-index:100;
+  width:44px;height:44px;border-radius:50%;
+  background:var(--glass-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--glass-border);
+  color:var(--text-primary);font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s ease;
+}
+#soundToggle:hover{background:var(--glass-bg-hover);transform:scale(1.1)}
+#soundToggle:active{transform:scale(.95)}
+
+/* ═══════════════════════ SPLASH SCREEN ═══════════════════════ */
+.splash-content{text-align:center}
+.splash-symbols{display:flex;align-items:center;justify-content:center;gap:clamp(16px,5vw,32px);margin-bottom:24px}
+.splash-x,.splash-o{
+  font-size:clamp(4rem,15vw,8rem);font-weight:900;line-height:1;
+  opacity:0;
+}
+.splash-x{color:var(--x-color);text-shadow:0 0 40px var(--x-glow);animation:splashPop .8s cubic-bezier(.175,.885,.32,1.275) .3s both}
+.splash-o{color:var(--o-color);text-shadow:0 0 40px var(--o-glow);animation:splashPop .8s cubic-bezier(.175,.885,.32,1.275) .6s both}
+.splash-divider{
+  font-size:clamp(2rem,8vw,4rem);font-weight:200;color:var(--glass-border);
+  opacity:0;animation:fadeIn .4s ease .2s both;
+}
+.splash-title{
+  font-size:clamp(1.4rem,5vw,2.4rem);font-weight:700;letter-spacing:6px;text-transform:uppercase;
+  opacity:0;animation:slideUp .6s ease 1s both;
+  background:linear-gradient(135deg,var(--x-color),var(--accent),var(--o-color));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.splash-subtitle{
+  font-size:clamp(.7rem,2.5vw,.9rem);font-weight:300;color:var(--text-secondary);
+  margin-top:8px;letter-spacing:3px;text-transform:uppercase;
+  opacity:0;animation:fadeIn .6s ease 1.3s both;
+}
+.splash-loader{
+  margin-top:40px;width:clamp(120px,40vw,200px);height:3px;
+  background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;
+  margin-inline:auto;opacity:0;animation:fadeIn .4s ease 1.5s both;
+}
+.splash-loader-bar{
+  height:100%;width:0;border-radius:4px;
+  background:linear-gradient(90deg,var(--x-color),var(--accent),var(--o-color));
+  animation:loadBar 1.8s ease-in-out 1.6s both;
+}
+
+@keyframes splashPop{
+  0%{transform:scale(0) rotate(-180deg);opacity:0}
+  60%{transform:scale(1.15) rotate(8deg);opacity:1}
+  80%{transform:scale(.95) rotate(-3deg)}
+  100%{transform:scale(1) rotate(0);opacity:1}
+}
+@keyframes slideUp{0%{transform:translateY(24px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+@keyframes loadBar{0%{width:0}100%{width:100%}}
+
+/* ═══════════════════════ DASHBOARD ═══════════════════════ */
+.dashboard-card{
+  width:min(420px,100%);padding:clamp(28px,6vw,48px) clamp(24px,5vw,40px);
+  text-align:center;
+}
+.dash-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px}
+.dash-logo-x{font-size:clamp(2.2rem,7vw,3.2rem);font-weight:900;color:var(--x-color);text-shadow:0 0 24px var(--x-glow)}
+.dash-logo-o{font-size:clamp(2.2rem,7vw,3.2rem);font-weight:900;color:var(--o-color);text-shadow:0 0 24px var(--o-glow)}
+.dash-title{font-size:clamp(1.3rem,4.5vw,1.8rem);font-weight:700;margin-bottom:4px}
+.dash-sub{font-size:clamp(.75rem,2.5vw,.9rem);color:var(--text-secondary);margin-bottom:clamp(24px,5vw,36px);font-weight:300}
+
+.mode-btn{
+  display:flex;align-items:center;gap:clamp(12px,3vw,16px);
+  width:100%;padding:clamp(14px,3.5vw,18px) clamp(16px,4vw,24px);
+  margin-bottom:14px;border-radius:16px;
+  background:var(--glass-bg);border:1px solid var(--glass-border);
+  color:var(--text-primary);text-align:left;
+  transition:all .3s ease;position:relative;overflow:hidden;
+}
+.mode-btn::before{
+  content:'';position:absolute;inset:0;
+  background:var(--btn-gradient);opacity:0;
+  transition:opacity .3s ease;border-radius:16px;
+}
+.mode-btn:hover::before,.mode-btn:active::before{opacity:1}
+.mode-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(102,126,234,0.3)}
+.mode-btn:active{transform:translateY(0) scale(.98)}
+.mode-btn>*{position:relative;z-index:1}
+.mode-icon{font-size:clamp(1.6rem,5vw,2rem);width:48px;text-align:center}
+.mode-text-wrap{flex:1}
+.mode-label{font-size:clamp(.9rem,3vw,1.05rem);font-weight:600;display:block}
+.mode-desc{font-size:clamp(.65rem,2vw,.75rem);color:var(--text-secondary);font-weight:300;display:block;margin-top:2px}
+.mode-arrow{font-size:1.1rem;color:var(--text-secondary);transition:transform .3s ease}
+.mode-btn:hover .mode-arrow{transform:translateX(4px);color:var(--text-primary)}
+
+/* ═══════════════════════ GAME SCREEN ═══════════════════════ */
+.game-content{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:space-between;
+  height:100%;width:100%;max-width:500px;
+  padding-top:clamp(16px,4vh,32px);
+  padding-bottom:clamp(16px,3vh,24px);
+}
+
+/* TURN INDICATOR / SCOREBOARD */
+.turn-bar{
+  display:flex;align-items:center;justify-content:center;gap:clamp(8px,3vw,16px);
+  width:100%;
+}
+.player-card{
+  flex:1;max-width:160px;padding:clamp(8px,2vw,14px) clamp(10px,2.5vw,16px);
+  border-radius:16px;text-align:center;
+  background:var(--glass-bg);border:2px solid transparent;
+  transition:all .4s ease;
+}
+.player-card.active-x{border-color:var(--x-color);box-shadow:0 0 20px var(--x-glow),inset 0 0 20px rgba(255,107,107,0.05)}
+.player-card.active-o{border-color:var(--o-color);box-shadow:0 0 20px var(--o-glow),inset 0 0 20px rgba(78,205,196,0.05)}
+.player-symbol{font-size:clamp(1.2rem,4vw,1.6rem);font-weight:800;display:block;line-height:1}
+.player-card .x-sym{color:var(--x-color);text-shadow:0 0 12px var(--x-glow)}
+.player-card .o-sym{color:var(--o-color);text-shadow:0 0 12px var(--o-glow)}
+.player-label{font-size:clamp(.55rem,1.8vw,.7rem);color:var(--text-secondary);display:block;margin-top:2px;font-weight:400}
+.player-score{font-size:clamp(.9rem,3vw,1.2rem);font-weight:700;display:block;margin-top:2px}
+.score-mid{
+  text-align:center;padding:clamp(6px,1.5vw,10px) clamp(8px,2vw,14px);
+  border-radius:12px;background:var(--glass-bg);
+}
+.score-mid-val{font-size:clamp(.9rem,3vw,1.1rem);font-weight:700;display:block}
+.score-mid-lbl{font-size:clamp(.5rem,1.5vw,.6rem);color:var(--text-secondary);display:block;margin-top:1px;font-weight:400;text-transform:uppercase;letter-spacing:1px}
+
+/* BOARD */
+.board-wrap{
+  display:flex;align-items:center;justify-content:center;
+  flex:1;width:100%;
+}
+.board{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:clamp(8px,2vw,12px);
+  width:min(clamp(260px,70vw,380px),100%);
+  aspect-ratio:1;
+  touch-action:manipulation;
+}
+.cell{
+  position:relative;border-radius:clamp(12px,3vw,18px);
+  background:var(--glass-bg);
+  border:1px solid var(--glass-border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:all .25s ease;
+  aspect-ratio:1;
+  overflow:hidden;
+}
+.cell::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at center,rgba(255,255,255,0.05) 0%,transparent 70%);
+  opacity:0;transition:opacity .3s ease;border-radius:inherit;
+}
+.cell:hover:not(.filled)::before{opacity:1}
+.cell:hover:not(.filled){
+  background:var(--glass-bg-hover);
+  border-color:rgba(255,255,255,0.2);
+  transform:scale(1.03);
+}
+.cell:active:not(.filled){transform:scale(.97)}
+.cell.filled{cursor:default;pointer-events:none}
+
+/* X & O MARKS */
+.mark{
+  font-size:clamp(2rem,9vw,3.6rem);font-weight:800;line-height:1;
+  opacity:0;animation:markPop .5s cubic-bezier(.175,.885,.32,1.275) forwards;
+}
+.mark-x{color:var(--x-color);text-shadow:0 0 24px var(--x-glow),0 0 48px rgba(255,107,107,0.2)}
+.mark-o{color:var(--o-color);text-shadow:0 0 24px var(--o-glow),0 0 48px rgba(78,205,196,0.2)}
+
+@keyframes markPop{
+  0%{transform:scale(0) rotate(-180deg);opacity:0}
+  50%{transform:scale(1.25) rotate(10deg);opacity:1}
+  70%{transform:scale(.9) rotate(-5deg)}
+  100%{transform:scale(1) rotate(0deg);opacity:1}
+}
+
+/* WINNER CELLS */
+.cell.winner-cell{
+  background:rgba(167,139,250,0.15)!important;
+  border-color:var(--accent)!important;
+  animation:winGlow 1s ease-in-out infinite alternate;
+}
+@keyframes winGlow{
+  0%{box-shadow:0 0 12px var(--accent-glow),inset 0 0 12px rgba(167,139,250,0.05)}
+  100%{box-shadow:0 0 32px var(--accent-glow),inset 0 0 24px rgba(167,139,250,0.1)}
+}
+
+/* BOTTOM NAV */
+.bottom-nav{
+  display:flex;align-items:center;justify-content:center;gap:clamp(16px,5vw,28px);
+  padding:clamp(8px,2vw,12px) clamp(20px,6vw,32px);
+  border-radius:60px;
+  background:var(--glass-bg);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--glass-border);
+  padding-bottom:calc(clamp(8px,2vw,12px) + env(safe-area-inset-bottom,0px));
+}
+.nav-btn{
+  width:clamp(44px,12vw,52px);height:clamp(44px,12vw,52px);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:var(--glass-bg);border:1px solid var(--glass-border);
+  color:var(--text-primary);transition:all .3s ease;
+}
+.nav-btn:hover{background:var(--glass-bg-hover);transform:scale(1.1)}
+.nav-btn:active{transform:scale(.9)}
+.nav-btn svg{width:20px;height:20px}
+
+/* ═══════════════════════ MODALS ═══════════════════════ */
+.modal-overlay{
+  position:fixed;inset:0;z-index:50;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  opacity:0;visibility:hidden;
+  transition:all .4s ease;padding:20px;
+}
+.modal-overlay.active{opacity:1;visibility:visible}
+
+.modal-card{
+  width:min(380px,100%);padding:clamp(24px,5vw,36px) clamp(20px,4vw,32px);
+  text-align:center;position:relative;overflow:hidden;
+  transform:scale(.85) translateY(20px);
+  transition:transform .4s cubic-bezier(.175,.885,.32,1.275);
+}
+.modal-overlay.active .modal-card{transform:scale(1) translateY(0)}
+
+.modal-icon{font-size:clamp(2.5rem,8vw,3.5rem);margin-bottom:12px;display:block;animation:bounceIn .6s ease .2s both}
+.modal-title{font-size:clamp(1.2rem,4vw,1.6rem);font-weight:700;margin-bottom:6px}
+.modal-sub{font-size:clamp(.75rem,2.5vw,.9rem);color:var(--text-secondary);margin-bottom:clamp(20px,4vw,28px);font-weight:300}
+
+@keyframes bounceIn{
+  0%{transform:scale(0);opacity:0}
+  50%{transform:scale(1.2)}
+  70%{transform:scale(.9)}
+  100%{transform:scale(1);opacity:1}
+}
+
+.modal-btns{display:flex;flex-direction:column;gap:10px}
+.m-btn{
+  padding:clamp(12px,3vw,14px) 24px;border-radius:14px;
+  font-size:clamp(.85rem,2.5vw,.95rem);font-weight:600;
+  transition:all .3s ease;letter-spacing:.5px;
+}
+.m-btn:hover{transform:translateY(-2px)}
+.m-btn:active{transform:translateY(0) scale(.97)}
+
+.m-btn-primary{background:var(--btn-gradient);color:white;box-shadow:0 4px 16px rgba(102,126,234,0.4)}
+.m-btn-primary:hover{box-shadow:0 6px 24px rgba(102,126,234,0.5)}
+.m-btn-secondary{background:var(--glass-bg);color:var(--text-primary);border:1px solid var(--glass-border)}
+.m-btn-secondary:hover{background:var(--glass-bg-hover)}
+.m-btn-danger{background:rgba(255,71,87,0.15);color:var(--danger);border:1px solid rgba(255,71,87,0.3)}
+.m-btn-danger:hover{background:rgba(255,71,87,0.25)}
+
+/* CONFETTI */
+.confetti{
+  position:absolute;width:8px;height:8px;top:-12px;
+  border-radius:2px;opacity:0;
+  animation:confettiFall 3s ease-in forwards;
+}
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotateZ(0) rotateX(0) scale(1);opacity:1}
+  100%{transform:translateY(500px) rotateZ(720deg) rotateX(360deg) scale(.5);opacity:0}
+}
+
+/* ═══════════════════════ THINKING DOT (BOT) ═══════════════════════ */
+.thinking{position:relative}
+.thinking::after{
+  content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
+  width:6px;height:6px;border-radius:50%;background:var(--o-color);
+  animation:thinkPulse .8s ease-in-out infinite;
+}
+@keyframes thinkPulse{0%,100%{opacity:.3;transform:translateX(-50%) scale(.8)}50%{opacity:1;transform:translateX(-50%) scale(1.2)}}
+
+/* ═══════════════════════ RESPONSIVE ═══════════════════════ */
+@media(max-height:600px){
+  .turn-bar{gap:6px}
+  .player-card{padding:6px 8px}
+  .board{gap:6px}
+  .game-content{padding-top:10px;padding-bottom:10px}
+}
+@media(min-width:768px){
+  .board{width:min(380px,70vw)}
+  .cell{border-radius:20px}
+  .cell:hover:not(.filled){transform:scale(1.05)}
+}
+@media(min-width:1024px){
+  .board{width:400px}
+  .modal-btns{flex-direction:row;justify-content:center}
+  .m-btn{flex:1}
+}
+
+/* ═══════════════════════ UTILITIES ═══════════════════════ */
+.hidden{display:none!important}
+</style>
+</head>
+
+<body>
+
+<!-- ═══════════ BACKGROUND PARTICLES ═══════════ -->
+<div id="bgParticles"></div>
+
+<!-- ═══════════ SOUND TOGGLE ═══════════ -->
+<button id="soundToggle" aria-label="Toggle sound">🔊</button>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════════       SPLASH SCREEN       ═══════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<section id="splashScreen" class="screen active">
+  <div class="splash-content">
+    <div class="splash-symbols">
+      <span class="splash-x">X</span>
+      <span class="splash-divider">⬥</span>
+      <span class="splash-o">O</span>
+    </div>
+    <h1 class="splash-title">Tic Tac Toe</h1>
+    <p class="splash-subtitle">The Classic Game</p>
+    <div class="splash-loader">
+      <div class="splash-loader-bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════════       DASHBOARD          ═══════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<section id="dashboardScreen" class="screen">
+  <div class="dashboard-card glass-card">
+    <div class="dash-logo">
+      <span class="dash-logo-x">X</span>
+      <span class="dash-logo-o">O</span>
+    </div>
+    <h1 class="dash-title">Tic Tac Toe</h1>
+    <p class="dash-sub">Choose your game mode</p>
+
+    <button class="mode-btn" id="pvpBtn">
+      <span class="mode-icon">👥</span>
+      <span class="mode-text-wrap">
+        <span class="mode-label">Player vs Player</span>
+        <span class="mode-desc">Play with a friend locally</span>
+      </span>
+      <span class="mode-arrow">→</span>
+    </button>
+
+    <button class="mode-btn" id="pvbBtn">
+      <span class="mode-icon">🤖</span>
+      <span class="mode-text-wrap">
+        <span class="mode-label">Player vs Bot</span>
+        <span class="mode-desc">Challenge the unbeatable AI</span>
+      </span>
+      <span class="mode-arrow">→</span>
+    </button>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════════       GAME SCREEN         ═══════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<section id="gameScreen" class="screen">
+  <div class="game-content">
+
+    <!-- Turn Indicator / Scoreboard -->
+    <div class="turn-bar">
+      <div class="player-card" id="cardX">
+        <span class="player-symbol x-sym">X</span>
+        <span class="player-label" id="labelX">Player 1</span>
+        <span class="player-score" id="scoreX">0</span>
+      </div>
+      <div class="score-mid">
+        <span class="score-mid-val" id="scoreDraw">0</span>
+        <span class="score-mid-lbl">Draw</span>
+      </div>
+      <div class="player-card" id="cardO">
+        <span class="player-symbol o-sym">O</span>
+        <span class="player-label" id="labelO">Player 2</span>
+        <span class="player-score" id="scoreO">0</span>
+      </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <div class="cell" data-i="0"></div>
+        <div class="cell" data-i="1"></div>
+        <div class="cell" data-i="2"></div>
+        <div class="cell" data-i="3"></div>
+        <div class="cell" data-i="4"></div>
+        <div class="cell" data-i="5"></div>
+        <div class="cell" data-i="6"></div>
+        <div class="cell" data-i="7"></div>
+        <div class="cell" data-i="8"></div>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+      <button class="nav-btn" id="navHome" title="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 001 1h3v-6h6v6h3a1 1 0 001-1V10"/>
+        </svg>
+      </button>
+      <button class="nav-btn" id="navPause" title="Pause">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/>
+        </svg>
+      </button>
+      <button class="nav-btn" id="navRestart" title="Restart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+        </svg>
+      </button>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════════       PAUSE MODAL         ═══════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="pauseModal">
+  <div class="modal-card glass-card">
+    <span class="modal-icon">⏸️</span>
+    <h2 class="modal-title">Game Paused</h2>
+    <p class="modal-sub">Take your time</p>
+    <div class="modal-btns">
+      <button class="m-btn m-btn-primary" id="btnResume">▶&ensp;Resume</button>
+      <button class="m-btn m-btn-secondary" id="btnPauseRestart">🔄&ensp;Restart</button>
+      <button class="m-btn m-btn-danger" id="btnPauseHome">🏠&ensp;Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════════       RESULT MODAL        ═══════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="resultModal">
+  <div class="modal-card glass-card" id="resultCard">
+    <span class="modal-icon" id="resultIcon">🏆</span>
+    <h2 class="modal-title" id="resultTitle">Player X Wins!</h2>
+    <p class="modal-sub" id="resultSub">Congratulations!</p>
+    <div class="modal-btns">
+      <button class="m-btn m-btn-primary" id="btnPlayAgain">🔄&ensp;Play Again</button>
+      <button class="m-btn m-btn-danger" id="btnResultHome">🏠&ensp;Home</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ═══════════       JAVASCRIPT          ═══════════ -->
+<!-- ═══════════════════════════════════════════════ -->
+<script>
+/* ═══════════ STATE ═══════════ */
+const S = {
+  board: Array(9).fill(''),
+  current: 'X',
+  mode: 'pvp',       // 'pvp' | 'pvbot'
+  active: false,
+  paused: false,
+  scores: {X:0, O:0, D:0}
+};
+let botTimer = null;
+
+const WIN = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+/* ═══════════ DOM REFS ═══════════ */
+const $ = id => document.getElementById(id);
+const cells = document.querySelectorAll('.cell');
+const screens = document.querySelectorAll('.screen');
+
+/* ═══════════ SOUND ENGINE ═══════════ */
+const Sound = {
+  ctx: null,
+  on: true,
+  init(){
+    if(this.ctx) return;
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  },
+  tone(freq, dur, type='sine', vol=.25, delay=0){
+    if(!this.ctx||!this.on) return;
+    const t = this.ctx.currentTime + delay;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.connect(g); g.connect(this.ctx.destination);
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    o.start(t); o.stop(t + dur);
+  },
+  click(){ this.tone(900,.06,'sine',.15) },
+  placeX(){
+    this.tone(660,.1,'triangle',.2);
+    this.tone(880,.08,'sine',.12,.06);
+  },
+  placeO(){
+    this.tone(440,.1,'triangle',.2);
+    this.tone(660,.08,'sine',.12,.06);
+  },
+  win(){
+    this.tone(523,.15,'sine',.25);
+    this.tone(659,.15,'sine',.25,.15);
+    this.tone(784,.15,'sine',.25,.3);
+    this.tone(1047,.35,'sine',.3,.45);
+  },
+  draw(){
+    this.tone(440,.2,'triangle',.2);
+    this.tone(380,.3,'triangle',.2,.2);
+  },
+  lose(){
+    this.tone(440,.15,'sine',.2);
+    this.tone(370,.15,'sine',.2,.15);
+    this.tone(311,.35,'sine',.25,.3);
+  }
+};
+
+/* ═══════════ PARTICLES ═══════════ */
+(function createParticles(){
+  const c = $('bgParticles');
+  for(let i=0;i<25;i++){
+    const p = document.createElement('div');
+    p.className='particle';
+    const s = 2 + Math.random()*5;
+    Object.assign(p.style,{
+      left: Math.random()*100+'%',
+      width: s+'px', height: s+'px',
+      animationDuration: (18+Math.random()*25)+'s',
+      animationDelay: Math.random()*20+'s',
+      opacity: 0
+    });
+    c.appendChild(p);
+  }
+})();
+
+/* ═══════════ SCREEN NAVIGATION ═══════════ */
+function showScreen(id){
+  screens.forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+/* ═══════════ SPLASH → DASHBOARD ═══════════ */
+setTimeout(()=>showScreen('dashboardScreen'), 3800);
+
+/* ═══════════ SOUND TOGGLE ═══════════ */
+$('soundToggle').onclick = ()=>{
+  Sound.init();
+  Sound.on = !Sound.on;
+  $('soundToggle').textContent = Sound.on ? '🔊' : '🔇';
+  Sound.click();
+};
+
+/* ═══════════ DASHBOARD BUTTONS ═══════════ */
+$('pvpBtn').onclick = ()=>{
+  Sound.init(); Sound.click();
+  S.mode='pvp';
+  $('labelO').textContent='Player 2';
+  startNewSession();
+};
+$('pvbBtn').onclick = ()=>{
+  Sound.init(); Sound.click();
+  S.mode='pvbot';
+  $('labelO').textContent='Bot 🤖';
+  startNewSession();
+};
+
+function startNewSession(){
+  S.scores={X:0,O:0,D:0};
+  updateScoreboard();
+  resetBoard();
+  showScreen('gameScreen');
+}
+
+/* ═══════════ GAME LOGIC ═══════════ */
+function resetBoard(){
+  clearTimeout(botTimer);
+  S.board = Array(9).fill('');
+  S.current = 'X';
+  S.active = true;
+  S.paused = false;
+  cells.forEach(c=>{
+    c.innerHTML='';
+    c.classList.remove('filled','winner-cell');
+    c.style.pointerEvents='';
+  });
+  updateTurn();
+}
+
+function updateTurn(){
+  const cX=$('cardX'), cO=$('cardO');
+  cX.classList.toggle('active-x', S.current==='X');
+  cO.classList.toggle('active-o', S.current==='O');
+  cX.classList.remove('thinking');
+  cO.classList.remove('thinking');
+  if(S.mode==='pvbot' && S.current==='O' && S.active){
+    cO.classList.add('thinking');
+  }
+}
+
+function updateScoreboard(){
+  $('scoreX').textContent = S.scores.X;
+  $('scoreO').textContent = S.scores.O;
+  $('scoreDraw').textContent = S.scores.D;
+}
+
+/* CELL CLICK */
+cells.forEach(cell=>{
+  cell.addEventListener('click',()=>{
+    const i = +cell.dataset.i;
+    if(!S.active || S.board[i]!=='' || S.paused) return;
+    if(S.mode==='pvbot' && S.current==='O') return;
+    Sound.init();
+    makeMove(i);
+  });
+});
+
+function makeMove(i){
+  S.board[i] = S.current;
+  renderMark(i);
+  S.current==='X' ? Sound.placeX() : Sound.placeO();
+
+  const result = checkResult();
+  if(result){
+    endGame(result);
+    return;
+  }
+  S.current = S.current==='X'?'O':'X';
+  updateTurn();
+
+  if(S.mode==='pvbot' && S.current==='O' && S.active){
+    lockBoard(true);
+    botTimer = setTimeout(()=>{
+      if(!S.active||S.paused) return;
+      const move = getBestMove();
+      makeMove(move);
+      lockBoard(false);
+    }, 500 + Math.random()*400);
+  }
+}
+
+function renderMark(i){
+  const cell = cells[i];
+  const span = document.createElement('span');
+  span.className = 'mark mark-' + S.board[i].toLowerCase();
+  span.textContent = S.board[i];
+  cell.appendChild(span);
+  cell.classList.add('filled');
+}
+
+function lockBoard(lock){
+  cells.forEach(c=>{ if(!c.classList.contains('filled')) c.style.pointerEvents = lock?'none':''; });
+}
+
+function checkResult(){
+  for(const [a,b,c] of WIN){
+    if(S.board[a] && S.board[a]===S.board[b] && S.board[a]===S.board[c]){
+      return {winner:S.board[a], line:[a,b,c]};
+    }
+  }
+  if(S.board.every(v=>v!=='')) return {winner:'D', line:null};
+  return null;
+}
+
+function endGame(result){
+  S.active = false;
+  $('cardX').classList.remove('thinking');
+  $('cardO').classList.remove('thinking');
+
+  if(result.line){
+    result.line.forEach(i=>cells[i].classList.add('winner-cell'));
+  }
+
+  if(result.winner==='D'){
+    S.scores.D++;
+    Sound.draw();
+  } else {
+    S.scores[result.winner]++;
+    if(S.mode==='pvbot' && result.winner==='O') Sound.lose();
+    else Sound.win();
+  }
+  updateScoreboard();
+
+  setTimeout(()=>showResult(result), 900);
+}
+
+/* ═══════════ RESULT MODAL ═══════════ */
+function showResult(result){
+  const rIcon=$('resultIcon'), rTitle=$('resultTitle'), rSub=$('resultSub');
+  if(result.winner==='D'){
+    rIcon.textContent='🤝';
+    rTitle.textContent="It's a Draw!";
+    rSub.textContent='Well played by both sides';
+  } else {
+    const name = result.winner==='X'
+      ? (S.mode==='pvp'?'Player 1':'You')
+      : (S.mode==='pvp'?'Player 2':'Bot 🤖');
+    if(S.mode==='pvbot' && result.winner==='O'){
+      rIcon.textContent='😈';
+      rTitle.textContent='Bot Wins!';
+      rSub.textContent='Better luck next time';
+    } else {
+      rIcon.textContent='🏆';
+      rTitle.textContent=name+' Wins!';
+      rSub.textContent='Congratulations!';
+    }
+  }
+  spawnConfetti();
+  $('resultModal').classList.add('active');
+}
+
+function spawnConfetti(){
+  const card = $('resultCard');
+  card.querySelectorAll('.confetti').forEach(c=>c.remove());
+  const colors = ['#ff6b6b','#4ecdc4','#a78bfa','#f472b6','#fbbf24','#34d399'];
+  for(let i=0;i<45;i++){
+    const c = document.createElement('div');
+    c.className='confetti';
+    const w = 5+Math.random()*8;
+    Object.assign(c.style,{
+      left: Math.random()*100+'%',
+      width: w+'px',
+      height: w*(0.5+Math.random())+'px',
+      background: colors[Math.floor(Math.random()*colors.length)],
+      animationDelay: Math.random()*1.5+'s',
+      animationDuration: (2+Math.random()*2)+'s',
+      borderRadius: Math.random()>.5?'50%':'2px'
+    });
+    card.appendChild(c);
+  }
+}
+
+/* ═══════════ MINIMAX AI ═══════════ */
+function getBestMove(){
+  let best=-Infinity, moves=[];
+  for(let i=0;i<9;i++){
+    if(S.board[i]===''){
+      S.board[i]='O';
+      const s = minimax(S.board,0,false);
+      S.board[i]='';
+      if(s>best){best=s;moves=[i]}
+      else if(s===best) moves.push(i);
+    }
+  }
+  return moves[Math.floor(Math.random()*moves.length)];
+}
+
+function minimax(b,d,isMax){
+  const w = quickCheck(b);
+  if(w==='O') return 10-d;
+  if(w==='X') return d-10;
+  if(b.every(v=>v!=='')) return 0;
+
+  if(isMax){
+    let best=-Infinity;
+    for(let i=0;i<9;i++){
+      if(b[i]===''){
+        b[i]='O';
+        best=Math.max(best,minimax(b,d+1,false));
+        b[i]='';
+      }
+    }
+    return best;
+  } else {
+    let best=Infinity;
+    for(let i=0;i<9;i++){
+      if(b[i]===''){
+        b[i]='X';
+        best=Math.min(best,minimax(b,d+1,true));
+        b[i]='';
+      }
+    }
+    return best;
+  }
+}
+
+function quickCheck(b){
+  for(const[a,c,d] of WIN){
+    if(b[a]&&b[a]===b[c]&&b[a]===b[d]) return b[a];
+  }
+  return null;
+}
+
+/* ═══════════ NAV & MODAL BUTTONS ═══════════ */
+// Bottom nav
+$('navHome').onclick=()=>{Sound.click();goHome()};
+$('navPause').onclick=()=>{Sound.click();pauseGame()};
+$('navRestart').onclick=()=>{Sound.click();resetBoard()};
+
+// Pause modal
+$('btnResume').onclick=()=>{Sound.click();resumeGame()};
+$('btnPauseRestart').onclick=()=>{Sound.click();hideModal('pauseModal');resetBoard()};
+$('btnPauseHome').onclick=()=>{Sound.click();hideModal('pauseModal');goHome()};
+
+// Result modal
+$('btnPlayAgain').onclick=()=>{Sound.click();hideModal('resultModal');resetBoard()};
+$('btnResultHome').onclick=()=>{Sound.click();hideModal('resultModal');goHome()};
+
+function pauseGame(){
+  if(!S.active) return;
+  S.paused=true;
+  clearTimeout(botTimer);
+  $('pauseModal').classList.add('active');
+}
+
+function resumeGame(){
+  S.paused=false;
+  hideModal('pauseModal');
+  if(S.mode==='pvbot'&&S.current==='O'&&S.active){
+    lockBoard(true);
+    botTimer=setTimeout(()=>{
+      if(!S.active||S.paused) return;
+      const move=getBestMove();
+      makeMove(move);
+      lockBoard(false);
+    },500+Math.random()*400);
+  }
+}
+
+function goHome(){
+  clearTimeout(botTimer);
+  S.active=false;S.paused=false;
+  hideModal('pauseModal');
+  hideModal('resultModal');
+  showScreen('dashboardScreen');
+}
+
+function hideModal(id){$(id).classList.remove('active')}
+
+</script>
+</body>
+</html>
